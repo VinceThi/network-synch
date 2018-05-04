@@ -16,6 +16,7 @@ plt.style.use('classic')
 
 
 ### TODO list
+# Regarder le spectre de la matrice moyenne versus le spectre de la matrice tiré de SBM lorsqu'il y a des chimères
 # Faire des graphiques Nb de chimères obtenues (ou de quoi du genre) selon la dispersion des oscillateurs initialement
 # Explorer le chaos pour le minimum du paramètre r_sig selon le paramètre delta (=A), le faire pour notre model
 # faire avec alpha_s, (p-e reproduire ou imiter les résultats de Bick 2018)
@@ -59,7 +60,7 @@ def give_adjacency_matrix(A_string, sizes, pq):
         return A
 
 
-def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma_array, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=True):
+def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=True):
     """
     Integration of a dynamics on the stochastic bloc model.
     :param sync_dynamics (function): Kuramoto dynamics for now, the code need to be adptated for any dynamics later . We need togive
@@ -96,7 +97,7 @@ def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma_array, alpha, freq
         for k in range(0, numberofrandmat):
             A = give_adjacency_matrix(A_string, sizes, pq)
             ### We find the solution for a matrix and a natural frequency array
-            allsolutionsode = odeint(sync_dynamics, w0ode, timelist, args=(omega, A, sigma_array, alpha)) # Each column is for one oscillator (there is N columns) and each line is for the time (there is numberoftimepoints lines)
+            allsolutionsode = odeint(sync_dynamics, w0ode, timelist, args=(omega, A, coupling, alpha)) # Each column is for one oscillator (there is N columns) and each line is for the time (there is numberoftimepoints lines)
 
 
             ### Cette boucle ralentie évidemment le code
@@ -243,9 +244,9 @@ def sync_phase_transition(sync_dynamics, thetas0, alpha, freq_distr_str, A_strin
     rlist = []
     for sigma in np.linspace(0, 1, numberofsigma):
         print(sigma)
-        sigma_array = np.zeros(N)
-        sigma_array[0:m] = sigma/sizes[0]
-        sigma_array[m:N] = sigma/sizes[1]
+        coupling = np.zeros(N)
+        coupling[0:m] = sigma/sizes[0]
+        coupling[m:N] = sigma/sizes[1]
 
         rlist.append( integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma, alpha, A_string, freq_distr_str, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=False)[0])
         print("\n")
@@ -269,12 +270,12 @@ def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
         fig.savefig("data/{}_{}_r1_r2.jpg".format(filename, timestr))
 
 
-def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, sigma_array, alpha, initial_conditions_str, freq_distr_str, A_string, numberinitialcond, numberoffreq, numberofrandmat, timelist):
+def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling, alpha, initial_conditions_str, freq_distr_str, A_string, numberinitialcond, numberoffreq, numberofrandmat, timelist):
     """
     :param rho_array:
     :param delta_array:
     :param sync_dynamics:
-    :param sigma_array:
+    :param coupling:
     :param alpha:
     :param sizes:
     :param initial_conditions_str:
@@ -289,13 +290,13 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, sigma_arr
     """
     N = sum(sizes)
     t0 = timer.clock()
-    chimera_map = np.ones((len(rho_array), len(delta_array)))
+    chimera_map = np.zeros((len(rho_array), len(delta_array)))
     density_map = np.zeros((len(rho_array), len(delta_array)))    # density = nbofchimera/nbCI
 
     i = 0
 
     for delta in delta_array:
-
+        t_one_delta = timer.clock()
         j = 0  # On fixe une colonne j
         for rho in rho_array:
             print(i, j)
@@ -312,30 +313,42 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, sigma_arr
 
                 numberofchimera = 0   # Count the number of chimera
                 # Solutions
-                for k in range(0, numberinitialcond):
-                    thetas0 = give_initial_conditions(initial_conditions_str, N)
-                    solutions = integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma_array, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=False)
-                    r1 = solutions[1]
-                    r2 = solutions[2]
-                    if r1 < 0.97 and r2 > 0.97:
-                        print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
-                        print("r1 = ", r1)
-                        print("r2 = ", r2)
-                        chimera_map[i, j] = r1
-                        numberofchimera += 1
-                    elif r1 > 0.97 and r2 < 0.97:
-                        print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
-                        print("r1 = ", r1)
-                        print("r2 = ", r2)
-                        chimera_map[i, j] = r2
-                        numberofchimera += 1
+                if p != 0 and q != 0:    # Because there is noperfect synchronization in this case
+                    for k in range(0, numberinitialcond):
+                        thetas0 = give_initial_conditions(initial_conditions_str, N)
+                        solutions = integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=False)
+                        r1 = solutions[1]
+                        r2 = solutions[2]
+                        if r1 - r2 > 0 and np.abs(r1 - r2) > 0.08:
+                            if r1 > 0.93:       #r1 < 0.97 and r2 > 0.97:
+                                print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
+                                print("r1 = ", r1)
+                                print("r2 = ", r2)
+                                chimera_map[i, j] = r1
+                                numberofchimera += 1
+                            else:
+                                print("You should integrate for a longer time!")
+                        elif r1 - r2 < 0 and np.abs(r1 - r2) > 0.08:
+                            if r2 > 0.93:     #r1 > 0.97 and r2 < 0.97:
+                                print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
+                                print("r1 = ", r1)
+                                print("r2 = ", r2)
+                                chimera_map[i, j] = r2
+                                numberofchimera += 1
+                            else:
+                                print("You should integrate for a longer time!")
+
+                if chimera_map[i, j] == 0:
+                    chimera_map[i, j] = 1
 
                 density_map[i, j] = numberofchimera/numberinitialcond
 
                 j += 1
+            print((timer.clock() - t_one_delta), "minutes to process one complete rho loop")
         i += 1
-    print((timer.clock()-t0)/60, "minutes to process")
-    return chimera_map, density_map
+    ttot = (timer.clock()-t0)/60
+    print(ttot, "minutes to process")
+    return chimera_map, density_map, ttot
 
 
 
@@ -365,15 +378,15 @@ sizes = [m, N-m]
 nbSBM = 10      # There is truly TRUE_NB_OF_SBM  = nbfreq times nbSBM
 nbfreq = 10
 sigma = 0.5
-sigma_array = np.zeros(N)
-sigma_array[0:m] = sigma/sizes[0]
-sigma_array[m:N] = sigma/sizes[1]
+coupling = np.zeros(N)
+coupling[0:m] = sigma/sizes[0]
+coupling[m:N] = sigma/sizes[1]
 
 print(sigma)
 
 thetas0 = np.linspace(0, 2*np.pi, N)  # Initial conditions  
 
-maps = generate_r_map(rho_array, delta_array, kuramoto_odeint, thetas0, sigma_array, 0, "Uniform", "SBM", sizes, nbfreq, nbSBM, timelist)
+maps = generate_r_map(rho_array, delta_array, kuramoto_odeint, thetas0, coupling, 0, "Uniform", "SBM", sizes, nbfreq, nbSBM, timelist)
 r_map = maps[0]
 r1_map = maps[1]
 r2_map = maps[2]
@@ -418,9 +431,9 @@ numberofsigma = 10
 thetas0 = np.linspace(0, 2*np.pi, N)  # Initial conditions  
 
 sig_rlist = sync_phase_transition(kuramoto_odeint, thetas0, alpha, "Uniform", "SBM", sizes, pq, numberoffreq, numberofrandmat, numberofsigma, timelist)
-sigma_array = sig_rlist[0]
+coupling = sig_rlist[0]
 rlist = sig_rlist[1]
-plot_phase_transition_r_vs_sigma(sigma_array, rlist, sizes, pq)
+plot_phase_transition_r_vs_sigma(coupling, rlist, sizes, pq)
 """
 
 
@@ -452,9 +465,9 @@ nbSBM = 1   # There is truly TRUE_NB_OF_SBM  = nbfreq times nbSBM
 # Dynamical parameters
             ### Ici-bas, IMPORTANT ____________________________________
 sigma = m   # Éventuellement, rescaler le temps, diviser les fréquences naturelles par sigma, redéfinir une freq nat rescalé , (il faut que les freq nat et le terme de couplage soient du même ordre)
-sigma_array = np.zeros(N)
-sigma_array[0:m] = sigma/sizes[0]
-sigma_array[m:N] = sigma/sizes[1]
+coupling = np.zeros(N)
+coupling[0:m] = sigma/sizes[0]
+coupling[m:N] = sigma/sizes[1]
 
 Beta = 0.1
 alpha = np.pi/2 - Beta
@@ -470,7 +483,7 @@ thetas0[m:N] = np.random.uniform(-5*np.pi/4, 7*np.pi/4, size=(1, m))[0]   # np.l
 
 
 # Solutions
-solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist)
+solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist)
 rtlist = solutions[3]
 rt1list = solutions[4]
 rt2list = solutions[5]

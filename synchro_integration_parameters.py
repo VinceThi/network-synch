@@ -3,8 +3,8 @@ import numpy as np
 ### Parameters
 
 # Time parameters
-numberoftimepoints = 5000  # 5000
-timelist = np.linspace(0, 10, numberoftimepoints)       # attention, en diminuant alpha, ça stabilise plus lentement
+numberoftimepoints = 2000  # 5000
+timelist = np.linspace(0, 20, numberoftimepoints)       # attention, en diminuant alpha, ça stabilise plus lentement
 deltat = timelist[1] - timelist[0]
 
 
@@ -14,8 +14,8 @@ m = 128  # 500  # int(N/2)  # Donc beta = 1/2
 sizes = [m, N-m]
 #beta = (m ** 2 + (N - m) ** 2) / N ** 2  # THIS IS TRUE IN THE LIMIT OF LARGE COMMUNITIES !!!! Asymetry of the blocs. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
                                           # beta = (n_1(n_1-1)+n_2(n_2 - 1))/n(n-1)
-rho_array = np.linspace(0, 1, 10)        # Average density. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
-delta_array = np.linspace(0, 0.55, 10)      # p - q. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
+rho_array = np.linspace(0, 1, 50)        # Average density. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
+delta_array = np.linspace(0, 0.55, 50)      # p - q. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
 adjacency_mat = "average"                 # or "SBM"
 nbadjmat = 1                              # There is truly TRUE_NB_OF_SBM  = nbfreq times nbSBM
 
@@ -36,11 +36,15 @@ pq = [[0.64, 0.46],
 
 
 # Dynamical parameters
-            ### Ici-bas, IMPORTANT ____________________________________
-sig = m   # Éventuellement, rescaler le temps, diviser les fréquences naturelles par sigma, redéfinir une freq nat rescalé , (il faut que les freq nat et le terme de couplage soient du même ordre)
-sigma_array = np.zeros(N)
-sigma_array[0:m] = sig/sizes[0]
-sigma_array[m:N] = sig/sizes[1]
+sig = N
+coupling = sig/N*np.ones(N)
+print(coupling)
+
+#            ### Ici-bas, IMPORTANT ____________________________________
+#sig = m   # Éventuellement, rescaler le temps, diviser les fréquences naturelles par sigma, redéfinir une freq nat rescalé , (il faut que les freq nat et le terme de couplage soient du même ordre)
+#coupling = np.zeros(N)
+#coupling[0:m] = sig/sizes[0]
+#coupling[m:N] = sig/sizes[1]
 
 Beta = 0.1
 alpha = np.pi/2 - Beta
@@ -51,7 +55,7 @@ nbfreq = 1
 
 # Initial conditions
 init_cond = "Uniform"
-nbCI = 100
+nbCI = 500
 
 
 

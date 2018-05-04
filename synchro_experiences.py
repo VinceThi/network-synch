@@ -6,6 +6,7 @@ from synchro_integration_parameters import *
 from synchro_integration import integrate_sync_dynamics_SBM, generate_chimera_map
 from synchro_dynamics import kuramoto_odeint
 import matplotlib.pyplot as plt
+import json
 from theoretical_prediction import *
 plt.style.use('classic')
 import matplotlib as mat
@@ -17,7 +18,7 @@ import matplotlib as mat
 i = 0
 for thetas0 in thetas_0_array:
 
-    solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
+    solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
     rtlist = solutions[3]
     rt1list = solutions[4]
     rt2list = solutions[5]
@@ -130,7 +131,7 @@ thetas0 = [0.04461508,  2.01459067,  4.70343455,  0.80495653,  1.65641329,  5.47
   5.05344297,  2.63605984,  4.01095828,  3.14379199,  1.31645897,  0.53600931,
   2.25588911,  4.33017601,  4.86744208,  5.7672842 ,  2.084341  ,  6.01737999,
   4.85298931,  0.44929268,  2.50347137,  4.01410018]
-solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
+solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
 rtlist = solutions[3]
 rt1list = solutions[4]
 rt2list = solutions[5]
@@ -244,7 +245,7 @@ thetas01 = [5.57160746,  5.53466196,  3.0534701,   1.89842059,  5.45235141,  2.6
   4.52098553,  1.6966655 ,  0.69122013,  0.3245926 ,  5.24223959,  1.76804319,
   2.31305214,  5.01007357,  3.73715033,  1.53204439,  0.00955054,  1.95170254,
   5.74866939,  4.31866494,  1.31206788,  1.33921151]
-solutions_almoststable = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas01, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq1, nbfreq, nbSBM, timelist)
+solutions_almoststable = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas01, coupling, alpha, freq_distr, adjacency_mat, sizes, pq1, nbfreq, nbSBM, timelist)
 rt1list_almoststable = solutions_almoststable[4]
 
 thetas02 = [ 5.15798123,  5.2832692,   2.55897847,  5.37977989,  6.10241626,  3.44032969,
@@ -290,7 +291,7 @@ thetas02 = [ 5.15798123,  5.2832692,   2.55897847,  5.37977989,  6.10241626,  3.
   0.00628325,  4.21970379,  0.63573905,  0.55223468,  0.37240812,  5.9492935 ,
   4.70835199,  3.02613797,  4.53933262,  5.36513992,  4.32972346,  3.56530349,
   2.52184447,  0.21086581,  4.06501022,  0.51510068]
-solutions_breathing = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas02, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq2, nbfreq, nbSBM, timelist)
+solutions_breathing = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas02, coupling, alpha, freq_distr, adjacency_mat, sizes, pq2, nbfreq, nbSBM, timelist)
 rt2list_breathing = solutions_breathing[5]
 
 thetas03 = [4.73530713,  2.77223191,  0.65314364,  0.10505591,  2.0332591,   0.23034388,
@@ -336,7 +337,7 @@ thetas03 = [4.73530713,  2.77223191,  0.65314364,  0.10505591,  2.0332591,   0.2
   5.01070189,  2.1808526 ,  4.56785857,  5.26674426,  1.83841557,  1.20098005,
   0.4300255 ,  3.54764756,  1.82000566,  1.2293175 ,  0.20495955,  1.3204246 ,
   0.27658858,  3.03637966,  0.41959531,  6.07659211]
-solutions_longbreathing = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas03, sigma_array, alpha, freq_distr, adjacency_mat, sizes, pq3, nbfreq, nbSBM, timelist)
+solutions_longbreathing = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas03, coupling, alpha, freq_distr, adjacency_mat, sizes, pq3, nbfreq, nbSBM, timelist)
 rt1list_longbreathing = solutions_longbreathing[4]
 
 plt.figure(figsize=(12, 8))
@@ -363,10 +364,9 @@ plt.show()
 
 
 
-
 ##################################################### Chimera map ######################################################
-"""
-solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, sigma_array, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist)
+#"""
+solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist)
 chimera_map = solutions[0]
 density_map = solutions[1]
 tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
@@ -384,7 +384,8 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
              "init_cond = {}\n".format(init_cond),
              "nbCI = {}".format(nbCI),
              "rho_array = np.linspace({}, {}, {})\n".format(rho_array[0], rho_array[-1], len(rho_array)),
-             "delta_array = np.linspace({}, {}, {})\n".format(delta_array[0], delta_array[-1], len(delta_array))]
+             "delta_array = np.linspace({}, {}, {})\n".format(delta_array[0], delta_array[-1], len(delta_array)),
+             "Total simulation time = {}".format(solutions[2])]
 #line1 = "numberoftimepoints = {}\n".format(numberoftimepoints)
 #line2 = "timelist = np.linspace({},{},{})\n".format(timelist[0], timelist[-1], len(timelist))
 #line3 = "deltat = {}".format(deltat)
@@ -441,7 +442,7 @@ if messagebox.askyesno("Python", "Would you like to save the parameters, the dat
 
     with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile: 
         json.dump(density_map.tolist(), outfile)                               
-"""
+#"""
 
 
 
@@ -496,8 +497,7 @@ plt.show()
 
 
 ################################################# Plot density map #####################################################
-import json
-
+"""
 with open('data/2018_05_02_16h01min09sec_chimera_map_10x10_density_map_densitymatrix.json') as json_data:
     density_map = np.array(json.load(json_data))
 
@@ -522,7 +522,7 @@ plt.imshow(density_map, cmap=cm, vmin=0, vmax=1,
 plt.plot(rho_array, delta(rho_array, psi_abrams_saddle(beta), alpha), color="k", label='$Saddle$')
 plt.plot(rho_array, delta(rho_array, psi_abrams_hopf(beta), alpha), color="r", label='$Hopf$')
 plt.plot(np.linspace(0, 1, 10000), 0.72 * np.linspace(0, 1, 10000), color="y",
-         label='$Homoclinic$')  ## La pente est approximative ici mais tiré de Abrams 2008 , expérimentalement
+         label='$Homoclinic$')  ## La pente est approximative ici mais tirée de Abrams 2008 , expérimentalement
 
 plt.xlabel("$\\rho$", fontsize=40)
 plt.ylabel("$\\Delta$", fontsize=40)
@@ -530,3 +530,4 @@ cbar = plt.colorbar()
 cbar.set_label("$R_r \\neq 1$", rotation=360, fontsize=40, labelpad=70)
 plt.legend(loc=4)
 plt.show()
+"""
