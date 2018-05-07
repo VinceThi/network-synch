@@ -54,9 +54,11 @@ def give_adjacency_matrix(A_string, sizes, pq):
         A = np.array(nx.to_numpy_matrix(stochastic_block_model(sizes, pq, nodelist=None, seed=None, directed=False, selfloops=False,sparse=True)))
         return A 
     elif A_string == "average":
-        p_mat = pq[0][0] * np.ones((sizes[0], sizes[0]))
-        q_mat = pq[0][1] * np.ones((sizes[1], sizes[1]))
-        A = np.block([[p_mat, q_mat], [q_mat, p_mat]])
+        p_mat_up = pq[0][0] * np.ones((sizes[0], sizes[0]))
+        p_mat_low = pq[1][1] * np.ones((sizes[1], sizes[1]))
+        q_mat_up = pq[0][1] * np.ones((sizes[0], sizes[1]))
+        q_mat_low = pq[1][0] * np.ones((sizes[1], sizes[0]))
+        A = np.block([[p_mat_up, q_mat_up], [q_mat_low, p_mat_low]])
         return A
 
 
@@ -324,7 +326,7 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling,
                                 print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
                                 print("r1 = ", r1)
                                 print("r2 = ", r2)
-                                chimera_map[i, j] = r1
+                                chimera_map[i, j] = r2
                                 numberofchimera += 1
                             else:
                                 print("You should integrate for a longer time!")
@@ -333,12 +335,12 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling,
                                 print("p = ", pq[0][0], "\n", "q = ", pq[0][1], "\n", "delta = ", delta, "\n", "rho = ", delta)
                                 print("r1 = ", r1)
                                 print("r2 = ", r2)
-                                chimera_map[i, j] = r2
+                                chimera_map[i, j] = r1
                                 numberofchimera += 1
                             else:
                                 print("You should integrate for a longer time!")
 
-                if chimera_map[i, j] == 0:
+                elif chimera_map[i, j] == 0:
                     chimera_map[i, j] = 1
 
                 density_map[i, j] = numberofchimera/numberinitialcond
