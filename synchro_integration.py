@@ -8,10 +8,10 @@ from scipy import stats
 import networkx as nx
 from geometrySBM import to_probability_space
 import time as timer
-from tkinter import *
-#from synchro_dynamics import kuramoto_odeint, dot_theta
 plt.style.use('classic')
 
+#from tkinter import *
+#from synchro_dynamics import kuramoto_odeint, dot_theta
 #import pickle
 
 
@@ -185,8 +185,7 @@ def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_di
     return r, r1, r2, np.array(rtlist), np.array(rt1list), np.array(rt2list) #, dot_theta_matrix
 
 
-def generate_r_map(rho_array, delta_array, sync_dynamics, thetas0, sigma, alpha, A_string, freq_distr_str, sizes, numberoffreq, numberofrandmat, timelist):
-    beta = (sizes[0] ** 2 + (sum(sizes) - sizes[0]) ** 2) / sum(sizes)** 2  #### To modify when beta neq 1/2
+def generate_r_map(rho_array, delta_array, sync_dynamics, thetas0, sigma, alpha, A_string, freq_distr_str, sizes, beta, numberoffreq, numberofrandmat, timelist):
 
     t0 = timer.clock()
     r_map = np.zeros((len(rho_array), len(delta_array)))
@@ -272,7 +271,7 @@ def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
         fig.savefig("data/{}_{}_r1_r2.jpg".format(filename, timestr))
 
 
-def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling, alpha, initial_conditions_str, freq_distr_str, A_string, numberinitialcond, numberoffreq, numberofrandmat, timelist):
+def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling, alpha, initial_conditions_str, freq_distr_str, A_string, numberinitialcond, numberoffreq, numberofrandmat, timelist, density_map_bool=True):
     """
     :param rho_array:
     :param delta_array:
@@ -308,6 +307,8 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling,
             q = probability_space_tuple[0]
             # print(p,q)
             if p > 1 or p < 0 or q > 1 or q < 0:
+                chimera_map[i, j] = np.nan
+                density_map[i, j] = np.nan
                 j += 1
             else:
                 pq = [[p, q],
@@ -328,6 +329,8 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling,
                                 print("r2 = ", r2)
                                 chimera_map[i, j] = r2
                                 numberofchimera += 1
+                                if density_map_bool == False:
+                                    break
                             else:
                                 print("You should integrate for a longer time!")
                         elif r1 - r2 < 0 and np.abs(r1 - r2) > 0.08:
@@ -337,16 +340,18 @@ def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling,
                                 print("r2 = ", r2)
                                 chimera_map[i, j] = r1
                                 numberofchimera += 1
+                                if density_map_bool == False:
+                                    break
                             else:
                                 print("You should integrate for a longer time!")
 
-                elif chimera_map[i, j] == 0:
-                    chimera_map[i, j] = 1
+                        else:
+                            chimera_map[i, j] = r1
 
                 density_map[i, j] = numberofchimera/numberinitialcond
 
                 j += 1
-            print((timer.clock() - t_one_delta), "minutes to process one complete rho loop")
+        print((timer.clock() - t_one_delta)/60, "minutes to process one complete rho loop \n")
         i += 1
     ttot = (timer.clock()-t0)/60
     print(ttot, "minutes to process")

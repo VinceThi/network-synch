@@ -1,3 +1,5 @@
+# @author: Vincent Thibeault
+
 import tkinter.simpledialog
 from tkinter import messagebox
 import time
@@ -8,17 +10,16 @@ from synchro_dynamics import kuramoto_odeint
 import matplotlib.pyplot as plt
 import json
 from theoretical_prediction import *
-plt.style.use('classic')
 import matplotlib as mat
-
+import seaborn as sns
+#plt.style.use('classic')
 
 ############################################ Plot r_1 and r_2  #########################################################
-"""
+#"""
 ### Operation LFC (Looking For Chimeras)
-i = 0
-for thetas0 in thetas_0_array:
-
-    solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
+for i in range(0, nbCI):
+    thetas0 = np.random.uniform(-np.pi, np.pi, size=(1, N))[0]
+    solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbadjmat, timelist, r12t=True)
     rtlist = solutions[3]
     rt1list = solutions[4]
     rt2list = solutions[5]
@@ -32,7 +33,7 @@ for thetas0 in thetas_0_array:
     line6 = "sizes = {}\n".format(sizes)
     line7 = "adjacency_matrix_type = {}\n".format(adjacency_mat)
     line8 = "Affinity/density matrix: pq = {}\n".format(pq)
-    line9 = "nb_SBM = {}\n".format(nbSBM)
+    line9 = "nb_SBM = {}\n".format(nbadjmat)
     line10 = "sigma = {}\n".format(sig)
     line11 = "alpha = {}\n".format(alpha)
     line12 = "freq_distr = {}\n".format(freq_distr)
@@ -51,10 +52,21 @@ for thetas0 in thetas_0_array:
 
     if rt2list[-1] < 0.97 or rt1list[-1] < 0.97:
         if rt2list[-1] > 0.97 or rt1list[-1] > 0.97:
-            plt.figure(figsize=(12, 8))
-            plt.plot(timelist, rt1list, label="$r_1(t)$")
-            plt.plot(timelist, rt2list, label="$r_2(t)$")
-            plt.legend(loc='best', fontsize=20)
+            plt.figure(figsize=(10, 6))
+            plt.rc('axes', linewidth=2)
+            params = {
+                'text.latex.preamble': ['\\usepackage{gensymb}'],
+                'text.usetex': True,
+                'font.family': 'serif',
+                'xtick.labelsize': 15,
+                'ytick.labelsize': 15
+            }
+            mat.rcParams.update(params)
+            plt.plot(timelist, rt1list, label="$R_1$", color="#ff9900", linewidth=2)
+            plt.plot(timelist, rt2list, label="$R_2$", color="#ff3700", linewidth=2)
+            legend = plt.legend(loc='best', fontsize=20)
+            legend.get_frame().set_linewidth(2)
+
             plt.ylabel('$Order\:parameters$', fontsize=25)
             plt.xlabel('$Time\:t$', fontsize=25)
             fig = plt.gcf()
@@ -80,14 +92,14 @@ for thetas0 in thetas_0_array:
                 #with open('data/{}_{}_dot_theta.json'.format(file, timestr), 'w') as outfile:
                 #    json.dump(dot_theta.tolist(), outfile)
             break
-    i += 1
     print(i)
-"""
+#"""
 
 
 
 ############################################ Plot chimera SBM ##########################################################
 """
+
 thetas0 = [0.04461508,  2.01459067,  4.70343455,  0.80495653,  1.65641329,  5.47445849,
   1.21340442,  5.92437955,  3.62638888,  1.3661011 ,  1.83424522,  4.82157024,
   4.44077113,  1.20586385,  1.80156938,  0.46500221,  6.11100881,  2.27097027,
@@ -131,7 +143,7 @@ thetas0 = [0.04461508,  2.01459067,  4.70343455,  0.80495653,  1.65641329,  5.47
   5.05344297,  2.63605984,  4.01095828,  3.14379199,  1.31645897,  0.53600931,
   2.25588911,  4.33017601,  4.86744208,  5.7672842 ,  2.084341  ,  6.01737999,
   4.85298931,  0.44929268,  2.50347137,  4.01410018]
-solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbSBM, timelist, r12t=True)
+solutions = integrate_sync_dynamics_SBM(kuramoto_odeint, thetas0, coupling, alpha, freq_distr, adjacency_mat, sizes, pq, nbfreq, nbadjmat, timelist, r12t=True)
 rtlist = solutions[3]
 rt1list = solutions[4]
 rt2list = solutions[5]
@@ -145,7 +157,7 @@ line5 = "Size of the first community: m = {}\n".format(m)
 line6 = "sizes = {}\n".format(sizes)
 line7 = "adjacency_matrix_type = {}\n".format(adjacency_mat)
 line8 = "Affinity/density matrix: pq = {}\n".format(pq)
-line9 = "nb_SBM = {}\n".format(nbSBM)
+line9 = "nb_SBM = {}\n".format(nbadjmat)
 line10 = "sigma = {}\n".format(sig)
 line11 = "alpha = {}\n".format(alpha)
 line12 = "freq_distr = {}\n".format(freq_distr)
@@ -365,7 +377,7 @@ plt.show()
 
 
 ##################################################### Chimera map ######################################################
-#"""
+"""
 solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist)
 chimera_map = solutions[0]
 density_map = solutions[1]
@@ -382,7 +394,7 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
              "freq_distr = {}\n".format(freq_distr),
              "nbfreq = {}\n".format(nbfreq),
              "init_cond = {}\n".format(init_cond),
-             "nbCI = {}".format(nbCI),
+             "nbCI = {}\n".format(nbCI),
              "rho_array = np.linspace({}, {}, {})\n".format(rho_array[0], rho_array[-1], len(rho_array)),
              "delta_array = np.linspace({}, {}, {})\n".format(delta_array[0], delta_array[-1], len(delta_array)),
              "Total simulation time = {}".format(solutions[2])]
@@ -420,7 +432,7 @@ plt.imshow(chimera_map, cmap=cm, vmin=0, vmax=1,
 plt.xlabel("$\\rho$", fontsize=40)
 plt.ylabel("$\\Delta$", fontsize=40)
 cbar = plt.colorbar()
-cbar.set_label("$R_r \\neq 1$", rotation=360, fontsize=40, labelpad=70)
+cbar.set_label("$R_r$", rotation=360, fontsize=40, labelpad=30)
 fig = plt.gcf()
 plt.show()
 if messagebox.askyesno("Python", "Would you like to save the parameters, the data and the plot?"):
@@ -440,9 +452,9 @@ if messagebox.askyesno("Python", "Would you like to save the parameters, the dat
     with open('data/{}_{}_chimeramatrix.json'.format(timestr, file), 'w') as outfile:
         json.dump(chimera_map.tolist(), outfile)
 
-    with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile: 
-        json.dump(density_map.tolist(), outfile)                               
-#"""
+    with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile:
+        json.dump(density_map.tolist(), outfile)
+"""
 
 
 
@@ -498,36 +510,143 @@ plt.show()
 
 ################################################# Plot density map #####################################################
 """
-with open('data/2018_05_02_16h01min09sec_chimera_map_10x10_density_map_densitymatrix.json') as json_data:
+
+with open('data/2018_05_06_20h38min34sec_chimera_map_densitymatrix.json') as json_data:
     density_map = np.array(json.load(json_data))
 
 beta = 0.1
 alpha = np.pi / 2 - beta
 
-rho_array = np.linspace(0, 1, 10)
-delta_array = np.linspace(0, 0.55, 10)
-plt.figure(figsize=(10, 8))
-cdict = {
-    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
-    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
-    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+rho_array = np.linspace(0, 1, 50)
+delta_array = np.linspace(0, 0.55, 50)
+i = 0
+for delta in delta_array:
+    j = 0  # On fixe une colonne j
+    for rho in rho_array:
+        probability_space_tuple = to_probability_space(rho, delta, 0.5)  # IMPORTANT : return (q, p)
+        p = probability_space_tuple[1]
+        q = probability_space_tuple[0]
+        # print(p,q)
+        if p > 1 or p < 0 or q > 1 or q < 0:
+            density_map[i, j] = np.nan
+            j += 1
+        else:
+            j += 1
+    i += 1
+
+
+plt.figure(figsize=(14*rho_array[-1], 14*delta_array[-1]/2))
+plt.rc('axes', linewidth=2)
+
+labelfontsize = 30
+params = {
+    'text.latex.preamble': ['\\usepackage{gensymb}'],
+    'text.usetex': True,
+    'font.family': 'serif',
+    'xtick.labelsize': 15,
+    'ytick.labelsize': 15
 }
+mat.rcParams.update(params)
 
+cdict = {
+    'red':   ((0, 255/255, 255/255),(0.05, 255/255,  255/255), (1.0, 255/255, 255/255)),
+    'green': ((0, 102/255, 102/255), (0.05, 147/255, 147/255), (1.0, 255/255, 255/255)),
+    'blue':  ((0, 0, 0 ),    (0.05, 76/255, 76/255),   (1.0, 255/255, 255/255))
+}
 cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
-
-# plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
 plt.imshow(density_map, cmap=cm, vmin=0, vmax=1,
-           extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
+           extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],                                                                                               
            interpolation='nearest', origin='lower', aspect=0.5)
-plt.plot(rho_array, delta(rho_array, psi_abrams_saddle(beta), alpha), color="k", label='$Saddle$')
-plt.plot(rho_array, delta(rho_array, psi_abrams_hopf(beta), alpha), color="r", label='$Hopf$')
-plt.plot(np.linspace(0, 1, 10000), 0.72 * np.linspace(0, 1, 10000), color="y",
-         label='$Homoclinic$')  ## La pente est approximative ici mais tirée de Abrams 2008 , expérimentalement
+plt.plot(np.linspace(0, 0.73, 10000), 0.72 * np.linspace(0, 0.73, 10000), color="#ad2727", label='$Homoclinic$', linewidth=5)  ## La pente est approximative ici mais tirée de Abrams 2008 , expérimentalement
+plt.plot(rho_array[0:39], deltafun(rho_array[0:39], psi_abrams_hopf(beta), alpha), color="#ff4300", label='$Hopf$', linewidth=5)
+plt.plot(rho_array[0:42], deltafun(rho_array[0:42], psi_abrams_saddle(beta), alpha), color="#ffdc5e", label='$Saddle$', linewidth=5)
 
-plt.xlabel("$\\rho$", fontsize=40)
-plt.ylabel("$\\Delta$", fontsize=40)
-cbar = plt.colorbar()
-cbar.set_label("$R_r \\neq 1$", rotation=360, fontsize=40, labelpad=70)
-plt.legend(loc=4)
+# Ici je triche sur les ordonnées à l'origine pour cacher les trous blancs
+plt.plot(np.linspace(0, 0.5, 10000), 2*np.linspace(0, 0.5, 10000) - 0.03, color="k", linewidth=18)
+plt.plot(np.linspace(0.5, 1.0, 10000), -2*np.linspace(0, 0.5, 10000) + 0.97, color="k", linewidth=18)
+
+
+
+#plt.plot(rho_array, 2*np.sqrt(rho_array/256), color="g", label='$KS-bound$')
+plt.xlabel("\\rho", fontsize=labelfontsize)
+ylab = plt.ylabel("\\Delta", fontsize=labelfontsize, labelpad=20, position=(-0.05, 0.45))
+plt.rc('axes', linewidth=2)
+plt.xlim([0, 1])
+plt.ylim([0, 0.55])
+ylab.set_rotation(0)
+cbar = plt.colorbar(pad=0.02)
+cbar.set_label("$\\frac{n_{chim}}{n_{CI}}$", rotation=360, fontsize=labelfontsize, labelpad=40)
+plt.legend(loc=2, fontsize=15)
 plt.show()
 """
+
+#### colormap old
+#cdict = {
+#    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
+#    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
+#    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+#}
+#params = {
+#    'text.latex.preamble': ['\\usepackage{gensymb}'],
+#    'image.origin': 'lower',
+#    'image.interpolation': 'nearest',
+#    'image.extent': [rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
+#    'axes.grid': False,
+#    'axes.labelsize': 30, # fontsize for x and y labels (was 10)
+#    'axes.titlesize': 30,
+#    'font.size': 30, # was 10
+#    'legend.fontsize': 20, # was 10
+#    'xtick.labelsize': 20,
+#    'ytick.labelsize': 20,
+#    'text.usetex': True,
+#    'figure.figsize': [15*rho_array[-1], 15*delta_array[-1]/2],
+#    'font.family': 'serif',
+#}
+#mat.rcParams.update(params)
+#fig, ax = plt.subplots()
+#img1 = ax.imshow(density_map, cmap=cm)
+#fig.colorbar(img1, ax=ax)
+#plt.show()
+
+
+#cdict = {
+#    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
+#    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
+#    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+#}
+#cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
+#sns.set(font_scale=1.5, rc={'text.usetex' : True})
+#sns.set_style("white")
+#ax = sns.heatmap(density_map, cmap=cm, vmin=0, vmax=1)#, cbar_kws={'label': '$\\frac{n_{chim}}{n_{CI}}$', 'orientation':'vertical'})
+#ax.invert_yaxis()
+#ax.set_xlabel("\\rho", fontsize=40)
+#ax.set_ylabel("\\Delta", fontsize=40)
+#plt.yticks(rotation=0)
+#ax.collections[0].colorbar.set_label("$\\frac{n_{chim}}{n_{CI}}$", size=40)
+#ax.collections[0].colorbar.set_rotation(90)
+
+#plt.imshow(density_map, cmap=cm, vmin=0, vmax=1,
+#           extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
+#           interpolation='nearest', origin='lower', aspect=0.5)
+#plt.plot(rho_array, delta(rho_array, psi_abrams_saddle(beta), alpha), color="k", label='$Saddle$')
+#plt.plot(rho_array, delta(rho_array, psi_abrams_hopf(beta), alpha), color="r", label='$Hopf$')
+#plt.plot(np.linspace(0, 1, 10000), 0.72 * np.linspace(0, 1, 10000), color="y", label='$Homoclinic$')  ## La pente est approximative ici mais tirée de Abrams 2008 , expérimentalement
+# plt.plot(rho_array, 2*np.sqrt(rho_array/256), color="g", label='$KS-bound$')
+
+
+#cbar = plt.colorbar()
+#cbar.set_label("$\\frac{n_{chim}}{n_{CI}}$", rotation=360, fontsize=40, labelpad=70)
+#plt.legend(loc=4)
+#plt.show()
+
+
+#xticklist = np.linspace(0, len(rho_array)-1, 5)
+#yticklist = np.linspace(0, len(delta_array)-1, 5)
+#rholist = []
+#deltalist = []
+#for i in xticklist:
+#    rholist.append(np.round(rho_array[int(i)], 2))
+#for i in yticklist:
+
+
+
