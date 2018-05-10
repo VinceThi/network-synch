@@ -1,10 +1,11 @@
 import numpy as np
+from synchro_integration import give_initial_conditions
 
 ### Parameters
 
 # Time parameters
-numberoftimepoints = 5000  # 5000
-timelist = np.linspace(0, 10, numberoftimepoints)       # attention, en diminuant alpha, ça stabilise plus lentement
+numberoftimepoints = 5000*5  # 5000
+timelist = np.linspace(0, 50, numberoftimepoints)       # attention, en diminuant alpha, ça stabilise plus lentement
 deltat = timelist[1] - timelist[0]
 
 
@@ -19,8 +20,16 @@ delta_array = np.linspace(0, 0.55, 10)      # p - q. See Jean-Gab article on fin
 adjacency_mat = "average"                 # or "SBM"
 nbadjmat = 1                              # There is truly TRUE_NB_OF_SBM  = nbfreq times nbSBM
 
-pq = [[0.64, 0.46],
-      [0.46, 0.64]]
+pq = [[0.64659, 0.35351],
+      [0.35351, 0.64659]]
+
+#pq = [[0.6203, 0.3797],
+#      [0.3797, 0.6203]]
+
+
+pq = [[0.62, 0.38],
+      [0.38, 0.62]]
+
 """
 #pq = [[0.54, 0.46],
 #      [0.46, 0.54]]
@@ -52,6 +61,7 @@ nbfreq = 1
 # Initial conditions
 init_cond = "Uniform"
 nbCI = 100
+thetas0 = give_initial_conditions(init_cond, N)
 
 
 
