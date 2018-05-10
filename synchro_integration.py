@@ -6,6 +6,7 @@ from stochastic_bloc_model import stochastic_block_model
 from scipy.integrate import odeint
 from scipy import stats
 import networkx as nx
+from synchro_dynamics import OA_reduce_kuramoto_odeint
 from geometrySBM import to_probability_space
 import time as timer
 plt.style.use('classic')
@@ -62,7 +63,7 @@ def give_adjacency_matrix(A_string, sizes, pq):
         return A
 
 
-def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=True):
+def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, rglob=False, r1r2=False, r12t=True):
     """
     Integration of a dynamics on the stochastic bloc model.
     :param sync_dynamics (function): Kuramoto dynamics for now, the code need to be adptated for any dynamics later . We need togive
@@ -129,8 +130,7 @@ def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_di
 
             plt.show()
             """
-
-            if r12t == False:
+            if r1r2 == True:
                 ### Synchronization order parameter for each community r1, r2 (the code is for two communities)
                 r1 = 0
                 r2 = 0
@@ -143,16 +143,17 @@ def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_di
                 r2 = r2 / (len(timelist)-tinf)  # IMPORTANT À REVÉRIF
                 r1sublist.append(r1)
                 r2sublist.append(r2)
-
+            elif rglob == True:
                 ### Standard synchronization order parameter
-                #r = 0
-                #for t in range(tinf, len(timelist)):
-                #    r += np.absolute(sum(np.exp(1j * allsolutionsode[t, :]))) / N
-                #r = r / (len(timelist)-tinf)    # r avg on time
-                #rsublist.append(r)
-                #rtsublist.append(np.absolute(np.sum(np.exp(1j * allsolutionsode), axis=1) / N))
+                r = 0
+                tinf = 4*len(timelist)//5
+                for t in range(tinf, len(timelist)):
+                    r += np.absolute(sum(np.exp(1j * allsolutionsode[t, :]))) / N
+                r = r / (len(timelist)-tinf)    # r avg on time
+                rsublist.append(r)
+                rtsublist.append(np.absolute(np.sum(np.exp(1j * allsolutionsode), axis=1) / N))
 
-            else:
+            elif r12t == True:
                 rtsublist.append(np.absolute(np.sum(np.exp(1j * allsolutionsode), axis=1) / N))
                 rt1sublist.append(np.absolute(np.sum(np.exp(1j * allsolutionsode[:, 0:sizes[0]]), axis=1) / sizes[0]))
                 rt2sublist.append(np.absolute(np.sum(np.exp(1j * allsolutionsode[:, sizes[0]:N]), axis=1) / sizes[1]))
@@ -179,10 +180,43 @@ def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_di
     #    print("r = ", r)
     #    print("r1 = ", r1)
     #    print("r2 = ", r2, "\n")
-
     #print((timer.clock() - ttot)/60, "minutes process time total")
     
     return r, r1, r2, np.array(rtlist), np.array(rt1list), np.array(rt2list) #, dot_theta_matrix
+
+
+def integrate_reduced_sync_dynamics_SBM(w0, coupling, alpha, sizes, pq, timelist):
+    """
+    :param w0 (list 1D): vector containing initial conditions of the variable of the problem (rho, phi) (len(w0) = 2*q = 2 * number of communities)
+    :param t (array): time list
+    :param omega (array or float): natural frequency
+    :param pq (list of lists (matrix)): Affinity matrix (see stochastic_bloc_model.py)
+    :param sizes (list): Sizes of the blocks (see stochastic_bloc_model.py)
+    :param coupling (float): sigma/N
+    :param alpha (float): Phase lag
+
+    :return: allsolutionsode: The first q solutions are the rho solutions and the last q solutions are the phi solutions
+             ex: q = 2
+              rho1 = allsolutionsode[:,0]
+              rho2 = allsolutionsode[:,1]
+              phi1 = allsolutionsode[:,2]
+              phi2 = allsolutionsode[:,3]
+    """
+    w0ode = w0
+    time = timer.clock()
+    omega = give_omega_array("Identical", sum(sizes))
+
+    allsolutionsode = odeint(OA_reduce_kuramoto_odeint, w0ode, timelist, args=(omega, pq, sizes, coupling, alpha))
+    f = np.array(sizes)/sum(sizes)
+    R = np.absolute(sum())
+    rhosum = list(np.zeros(len(sizes)))
+    tinf = 4*len(timelist)//5
+    for t in range(tinf, len(timelist)):
+        rhosum += allsolutionsode[t][0:len(sizes)]
+    rhosum = rhosum/(len(timelist) - tinf)
+    R = sum(rhosum)/len(sizes)   # R = sum_i=1^q <rho_i>_{lasttimes}
+
+    return allsolutionsode, R
 
 
 def generate_r_map(rho_array, delta_array, sync_dynamics, thetas0, sigma, alpha, A_string, freq_distr_str, sizes, beta, numberoffreq, numberofrandmat, timelist):
@@ -212,7 +246,7 @@ def generate_r_map(rho_array, delta_array, sync_dynamics, thetas0, sigma, alpha,
                       [q, p]]
 
                 # Solutions
-                solution = integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma, alpha,  A_string, freq_distr_str, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=False)
+                solution = integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma, alpha,  A_string, freq_distr_str, sizes, pq, numberoffreq, numberofrandmat, timelist, rglob=False, r1r2=True, r12t=False)
                 r_map[i, j] = solution[0]  
                 r1_map[i, j] = solution[1] 
                 r2_map[i, j] = solution[2] 
@@ -238,37 +272,24 @@ def generate_r_map(rho_array, delta_array, sync_dynamics, thetas0, sigma, alpha,
     return r_map, r1_map, r2_map
 
 
-def sync_phase_transition(sync_dynamics, thetas0, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, numberofsigma, timelist):
+def sync_phase_transition(sync_dynamics, thetas0, w0, coupling_array, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist):
     total_time = timer.clock()
-    N = sum(sizes)
-    m = sizes[0]
     rlist = []
-    for sigma in np.linspace(0, 1, numberofsigma):
-        print(sigma)
-        coupling = np.zeros(N)
-        coupling[0:m] = sigma/sizes[0]
-        coupling[m:N] = sigma/sizes[1]
+    rlistth = []
+    for coupling in coupling_array:
+        print(coupling)
 
-        rlist.append( integrate_sync_dynamics_SBM(sync_dynamics, thetas0, sigma, alpha, A_string, freq_distr_str, sizes, pq, numberoffreq, numberofrandmat, timelist, r12t=False)[0])
+        solutions = integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, rglob=True, r1r2=False, r12t=False)
+        rlist.append(solutions[0])
+
+        solutionsth = integrate_reduced_sync_dynamics_SBM(w0, coupling, alpha, sizes, pq, timelist)
+        rlistth.append(solutionsth[1])
         print("\n")
-    print((timer.clock() - total_time)/60, "minutes to process")
+  
+    ttot = (timer.clock() - total_time)/60
+    print(ttot, "minutes to process")
 
-    return np.linspace(0, 1, numberofsigma), np.array(rlist)
-
-
-def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
-    plt.figure(figsize=(12, 8))
-    plt.plot(timelist, rt1list, label="$r_1(t)$")
-    plt.plot(timelist, rt2list, label="$r_2(t)$")
-    plt.legend(loc='best', fontsize=20)
-    plt.ylabel('$Order\:parameters$', fontsize=25)
-    plt.xlabel('$Time\:t$', fontsize=25)
-    fig = plt.gcf()
-    plt.show()
-    from tkinter import messagebox
-    if messagebox.askyesno("Python", "Would you like to save the plot?"):
-        #fig.savefig("Images/chimeras/chimerar1r2_N{}_p{}_q{}_alpha{}_sigma{}_beta{}_{}freqdistr_adjmat{}_thetas0_separateuniform_time{}to{}_{}pts.jpg".format( N, pq[0][0], pq[0][1], np.round(alpha, 2), sigma, beta, freq_distr, adjacency_mat, timelist[0], timelist[-1], len(timelist)))
-        fig.savefig("data/{}_{}_r1_r2.jpg".format(filename, timestr))
+    return np.array(rlist), np.array(rlistth), ttot
 
 
 def generate_chimera_map(rho_array, delta_array, sizes, sync_dynamics, coupling, alpha, initial_conditions_str, freq_distr_str, A_string, numberinitialcond, numberoffreq, numberofrandmat, timelist, density_map_bool=True):
@@ -446,7 +467,19 @@ plot_phase_transition_r_vs_sigma(coupling, rlist, sizes, pq)
 
 
 ######################################## Generate Chimera r1 and r2 vs time ############################################
-
+def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
+    plt.figure(figsize=(12, 8))
+    plt.plot(timelist, rt1list, label="$r_1(t)$")
+    plt.plot(timelist, rt2list, label="$r_2(t)$")
+    plt.legend(loc='best', fontsize=20)
+    plt.ylabel('$Order\:parameters$', fontsize=25)
+    plt.xlabel('$Time\:t$', fontsize=25)
+    fig = plt.gcf()
+    plt.show()
+    from tkinter import messagebox
+    if messagebox.askyesno("Python", "Would you like to save the plot?"):
+        #fig.savefig("Images/chimeras/chimerar1r2_N{}_p{}_q{}_alpha{}_sigma{}_beta{}_{}freqdistr_adjmat{}_thetas0_separateuniform_time{}to{}_{}pts.jpg".format( N, pq[0][0], pq[0][1], np.round(alpha, 2), sigma, beta, freq_distr, adjacency_mat, timelist[0], timelist[-1], len(timelist)))
+        fig.savefig("data/{}_{}_r1_r2.jpg".format(filename, timestr))
 """
 
 ### Parameters

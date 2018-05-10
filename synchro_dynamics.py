@@ -30,3 +30,36 @@ def kuramoto_odeint(w, t, omega, adjacencymatrix, coupling, alpha):
     theta = w
     dthetadt = dot_theta(omega, theta, adjacencymatrix, coupling, alpha)#, N)
     return dthetadt
+
+
+### Reduced Kuramoto dynamics with Ott-Antonson ansatz
+def dot_rho(rho, phi, pq, sizes, coupling, alpha):
+    f = np.array(sizes)/sum(sizes)
+    return coupling*(1-rho**2)/2*(np.cos(phi + alpha) * np.dot(np.array(pq), f*rho*np.cos(phi)) + np.sin(phi+alpha) * np.dot(np.array(pq), f*rho*np.sin(phi)))
+
+def dot_phi(rho, phi, omega, pq, sizes, coupling, alpha):
+    f = np.array(sizes)/sum(sizes)
+    return omega + coupling*(1+rho**2)/(2*rho)*(np.cos(phi + alpha) * np.dot(np.array(pq), f*rho*np.sin(phi)) - np.sin(phi+alpha) * np.dot(np.array(pq), f*rho*np.cos(phi)))
+
+def OA_reduce_kuramoto_odeint(w, t, omega, pq, sizes, coupling, alpha):
+    """
+
+    :param w: vector containing the variable of the problem (theta) (len(w) = 2*q = 2 * number of communities)
+    :param t: time list
+    :param omega: natural frequency
+    :param pq (list of lists (matrix)): Affinity matrix (see stochastic_bloc_model.py)
+    :param sizes (list): Sizes of the blocks (see stochastic_bloc_model.py)
+    :param coupling: sigma/N
+    :param alpha: Phase lag
+    :return:
+    """
+    rho = w[0]
+    phi = w[1]
+    drhodt = dot_rho(rho, phi, pq, sizes, coupling, alpha)
+    dphidt = dot_phi(rho, phi, omega, pq, sizes, coupling, alpha)
+    return np.concatenate([drhodt, dphidt])
+
+
+
+
+

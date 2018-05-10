@@ -4,8 +4,8 @@ import tkinter.simpledialog
 from tkinter import messagebox
 import time
 import json
-from synchro_integration_parameters import *
-from synchro_integration import integrate_sync_dynamics_SBM, generate_chimera_map
+from synchro_parameters import *
+from synchro_integration import integrate_sync_dynamics_SBM, generate_chimera_map, integrate_reduced_sync_dynamics_SBM
 from synchro_dynamics import kuramoto_odeint
 import matplotlib.pyplot as plt
 import json
@@ -15,7 +15,7 @@ import seaborn as sns
 #plt.style.use('classic')
 
 ############################################ Plot r_1 and r_2  #########################################################
-#"""
+"""
 ### Operation LFC (Looking For Chimeras)
 for i in range(0, nbCI):
     thetas0 = np.random.uniform(-np.pi, np.pi, size=(1, N))[0]
@@ -93,7 +93,7 @@ for i in range(0, nbCI):
                 #    json.dump(dot_theta.tolist(), outfile)
             break
     print(i)
-#"""
+"""
 
 
 
@@ -378,7 +378,8 @@ plt.show()
 
 ##################################################### Chimera map ######################################################
 """
-solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist)
+density_map_bool = False
+solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist, density_map_bool=density_map_bool)
 chimera_map = solutions[0]
 density_map = solutions[1]
 tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
@@ -388,8 +389,9 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
              "size of the first community: m = {}\n".format(m),
              "sizes = {}\n".format(sizes),
              "adjacency_matrix_type = {}\n".format(adjacency_mat),
-             "# affinity/density matrix: pq = there are multiple matrix (we're trying to have all combinations)",
-             "nb_SBM = {}\n".format(nbadjmat), "sigma = {}\n".format(sig), "\n",
+             "# affinity/density matrix: pq = there are multiple matrix (we're trying to have all combinations)\n",
+             "nb_SBM = {}\n".format(nbadjmat),
+              "sigma = {}\n".format(sig), "\n",
              "alpha = {}\n".format(alpha),
              "freq_distr = {}\n".format(freq_distr),
              "nbfreq = {}\n".format(nbfreq),
@@ -397,7 +399,7 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
              "nbCI = {}\n".format(nbCI),
              "rho_array = np.linspace({}, {}, {})\n".format(rho_array[0], rho_array[-1], len(rho_array)),
              "delta_array = np.linspace({}, {}, {})\n".format(delta_array[0], delta_array[-1], len(delta_array)),
-             "Total simulation time = {}".format(solutions[2])]
+             "Total simulation time = {} minutes".format(solutions[2])]
 #line1 = "numberoftimepoints = {}\n".format(numberoftimepoints)
 #line2 = "timelist = np.linspace({},{},{})\n".format(timelist[0], timelist[-1], len(timelist))
 #line3 = "deltat = {}".format(deltat)
@@ -417,12 +419,25 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
 timestr = time.strftime("%Y_%m_%d_%Hh%Mmin%Ssec")
 
 plt.figure(figsize=(10, 8))
-cdict = {
-    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
-    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
-    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+plt.rc('axes', linewidth=2)
+params = {
+    'text.latex.preamble': ['\\usepackage{gensymb}'],
+    'text.usetex': True,
+    'font.family': 'serif',
+    'xtick.labelsize': 15,
+    'ytick.labelsize': 15
 }
-
+mat.rcParams.update(params)
+#cdict = {
+#    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
+#    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
+#    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+#}
+cdict = {
+    'red':   ((1.0, 255/255, 255/255), (0.6, 255/255,  255/255),   (0, 255/255, 255/255)),
+    'green': ((1.0, 255/255, 255/255), (0.6, 147/255, 147/255),   (0, 102/255, 102/255)),
+    'blue':  ((1.0, 255/255, 255/255), (0.6, 76/255, 76/255),  (0, 0, 0 )           )
+}
 cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 
 #plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
@@ -430,8 +445,9 @@ plt.imshow(chimera_map, cmap=cm, vmin=0, vmax=1,
            extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
            interpolation='nearest', origin='lower', aspect=0.5)
 plt.xlabel("$\\rho$", fontsize=40)
-plt.ylabel("$\\Delta$", fontsize=40)
-cbar = plt.colorbar()
+ylab = plt.ylabel("$\\Delta$", fontsize=40)
+ylab.set_rotation(0)
+cbar = plt.colorbar(pad=0.02)
 cbar.set_label("$R_r$", rotation=360, fontsize=40, labelpad=30)
 fig = plt.gcf()
 plt.show()
@@ -451,9 +467,9 @@ if messagebox.askyesno("Python", "Would you like to save the parameters, the dat
 
     with open('data/{}_{}_chimeramatrix.json'.format(timestr, file), 'w') as outfile:
         json.dump(chimera_map.tolist(), outfile)
-
-    with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile:
-        json.dump(density_map.tolist(), outfile)
+    if density_map_bool == True:
+        with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile:
+            json.dump(density_map.tolist(), outfile)
 """
 
 
@@ -649,4 +665,22 @@ plt.show()
 #for i in yticklist:
 
 
+############################################ Integrate reduced dynamics ################################################
+#"""
+solutions = integrate_reduced_sync_dynamics_SBM(w0, coupling, alpha, sizes, pq, timelist)
+rho1 = solutions[0][:, 0]
+rho2 = solutions[0][:, 1]
+phi1 = solutions[0][:, 2]
+phi2 = solutions[0][:, 3]
+R = solutions[1]
 
+plt.plot(timelist, rho1)
+plt.plot(timelist, rho2)
+plt.plot(timelist, R*np.ones(len(timelist)))
+#plt.plot(timelist, phi1)
+#plt.plot(timelist, phi2)
+#plt.plot(solutions[:, 0]*np.cos(solutions[:, 2]-solutions[:, 3]), solutions[:, 0]*np.sin(solutions[:, 2]-solutions[:, 3]))
+#plt.plot(solutions[:, 1]*np.cos(solutions[:, 2]-solutions[:, 3]), solutions[:, 1]*np.sin(solutions[:, 2]-solutions[:, 3]))
+plt.show()
+
+#"""
