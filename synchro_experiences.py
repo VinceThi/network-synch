@@ -39,15 +39,15 @@ for i in range(0, nbCI):
     line12 = "freq_distr = {}\n".format(freq_distr)
     line13 = "nbfreq = {}\n".format(nbfreq)
     line14 = "thetas0 = {}\n".format(thetas0)
-    timestr = time.strftime("%d_%m_%Y_%Hh%Mmin%Ssec")
-    #plt.figure(figsize=(12, 8))
-    #plt.plot(timelist, rt1list, label="$r_1(t)$")
-    #plt.plot(timelist, rt2list, label="$r_2(t)$")
-    #plt.legend(loc='best', fontsize=20)
-    #plt.ylabel('$Order\:parameters$', fontsize=25)
-    #plt.xlabel('$Time\:t$', fontsize=25)
-    #fig = plt.gcf()
-    #plt.show()
+    timestr = time.strftime("%Y_%m_%d_%Hh%Mmin%Ssec")
+    plt.figure(figsize=(12, 8))
+    plt.plot(timelist, rt1list, label="$r_1(t)$")
+    plt.plot(timelist, rt2list, label="$r_2(t)$")
+    plt.legend(loc='best', fontsize=20)
+    plt.ylabel('$Order\:parameters$', fontsize=25)
+    plt.xlabel('$Time\:t$', fontsize=25)
+    fig = plt.gcf()
+    plt.show()
 
 
     if rt2list[-1] < 0.97 or rt1list[-1] < 0.97:
@@ -377,9 +377,9 @@ plt.show()
 
 
 ##################################################### Chimera map ######################################################
-"""
+#"""
 density_map_bool = False
-solutions = generate_chimera_map(rho_array, delta_array, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist, density_map_bool=density_map_bool)
+solutions = generate_chimera_map(rho_array, delta_array, beta, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist, density_map_bool=density_map_bool)
 chimera_map = solutions[0]
 density_map = solutions[1]
 tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
@@ -391,7 +391,7 @@ tosavelist = ["numberoftimepoints = {}\n".format(numberoftimepoints),
              "adjacency_matrix_type = {}\n".format(adjacency_mat),
              "# affinity/density matrix: pq = there are multiple matrix (we're trying to have all combinations)\n",
              "nb_SBM = {}\n".format(nbadjmat),
-              "sigma = {}\n".format(sig), "\n",
+             "sigma = {}\n".format(sig), "\n",
              "alpha = {}\n".format(alpha),
              "freq_distr = {}\n".format(freq_distr),
              "nbfreq = {}\n".format(nbfreq),
@@ -434,9 +434,9 @@ mat.rcParams.update(params)
 #    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
 #}
 cdict = {
-    'red':   ((1.0, 255/255, 255/255), (0.6, 255/255,  255/255),   (0, 255/255, 255/255)),
-    'green': ((1.0, 255/255, 255/255), (0.6, 147/255, 147/255),   (0, 102/255, 102/255)),
-    'blue':  ((1.0, 255/255, 255/255), (0.6, 76/255, 76/255),  (0, 0, 0 )           )
+    'red':   ((0, 255/255, 255/255), (0.6, 255/255,  255/255),(1.0, 255/255, 255/255)),
+    'green': ((0, 255/255, 255/255), (0.6, 147/255, 147/255), (1.0, 102/255, 102/255)),
+    'blue':  ((0, 255/255, 255/255), (0.6, 76/255, 76/255),   (1.0, 0, 0 )           )
 }
 cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 
@@ -445,9 +445,9 @@ plt.imshow(chimera_map, cmap=cm, vmin=0, vmax=1,
            extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
            interpolation='nearest', origin='lower', aspect=0.5)
 plt.xlabel("$\\rho$", fontsize=40)
-ylab = plt.ylabel("$\\Delta$", fontsize=40)
+ylab = plt.ylabel("$\\Delta$", fontsize=40, labelpad=20)
 ylab.set_rotation(0)
-cbar = plt.colorbar(pad=0.02)
+cbar = plt.colorbar(pad=0.05)
 cbar.set_label("$R_r$", rotation=360, fontsize=40, labelpad=30)
 fig = plt.gcf()
 plt.show()
@@ -470,7 +470,7 @@ if messagebox.askyesno("Python", "Would you like to save the parameters, the dat
     if density_map_bool == True:
         with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile:
             json.dump(density_map.tolist(), outfile)
-"""
+#"""
 
 
 
@@ -524,14 +524,14 @@ plt.show()
 
 
 
-################################################# Plot density map #####################################################
+###################################################### Plot density map ################################################
 """
 
 with open('data/2018_05_06_20h38min34sec_chimera_map_densitymatrix.json') as json_data:
     density_map = np.array(json.load(json_data))
 
-beta = 0.1
-alpha = np.pi / 2 - beta
+Beta = 0.1
+alpha = np.pi / 2 - Beta
 
 rho_array = np.linspace(0, 1, 50)
 delta_array = np.linspace(0, 0.55, 50)
@@ -539,7 +539,7 @@ i = 0
 for delta in delta_array:
     j = 0  # On fixe une colonne j
     for rho in rho_array:
-        probability_space_tuple = to_probability_space(rho, delta, 0.5)  # IMPORTANT : return (q, p)
+        probability_space_tuple = to_probability_space(rho, delta, beta)  # IMPORTANT : return (q, p)
         p = probability_space_tuple[1]
         q = probability_space_tuple[0]
         # print(p,q)
@@ -666,21 +666,68 @@ plt.show()
 
 
 ############################################ Integrate reduced dynamics ################################################
-#"""
+"""
 solutions = integrate_reduced_sync_dynamics_SBM(w0, coupling, alpha, sizes, pq, timelist)
 rho1 = solutions[0][:, 0]
 rho2 = solutions[0][:, 1]
 phi1 = solutions[0][:, 2]
 phi2 = solutions[0][:, 3]
-R = solutions[1]
+Rt = solutions[1]
+Rmoy = solutions[2]
 
 plt.plot(timelist, rho1)
 plt.plot(timelist, rho2)
-plt.plot(timelist, R*np.ones(len(timelist)))
+plt.plot(timelist, np.imag(rho1*np.exp(1j*phi1)))
+plt.plot(timelist, np.imag(rho2*np.exp(1j*phi1)))
+plt.plot(timelist, Rt)
+plt.plot(timelist, Rmoy*np.ones(len(timelist)))
 #plt.plot(timelist, phi1)
 #plt.plot(timelist, phi2)
 #plt.plot(solutions[:, 0]*np.cos(solutions[:, 2]-solutions[:, 3]), solutions[:, 0]*np.sin(solutions[:, 2]-solutions[:, 3]))
 #plt.plot(solutions[:, 1]*np.cos(solutions[:, 2]-solutions[:, 3]), solutions[:, 1]*np.sin(solutions[:, 2]-solutions[:, 3]))
 plt.show()
 
-#"""
+"""
+
+
+########################################### Replot chimera map #########################################################
+"""
+with open('data/2018_05_11_12h27min13sec_heteroblocksizes_chimeramatrix.json') as json_data:
+    chimera_map = np.array(json.load(json_data))
+
+
+
+plt.figure(figsize=(10, 8))
+plt.rc('axes', linewidth=2)
+params = {
+    'text.latex.preamble': ['\\usepackage{gensymb}'],
+    'text.usetex': True,
+    'font.family': 'serif',
+    'xtick.labelsize': 15,
+    'ytick.labelsize': 15
+}
+mat.rcParams.update(params)
+# cdict = {
+#    'red': ((0.0, 1.0, 1.0), (0.6, 0.3, 0.3), (1.0, 0.1, 0.1)),
+#    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
+#    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
+# }
+cdict = {
+    'red': ((0, 255 / 255, 255 / 255), (0.9, 255 / 255, 255 / 255), (1.0, 255 / 255, 255 / 255)),
+    'green': ((0, 255 / 255, 255 / 255), (0.9, 147 / 255, 147 / 255), (1.0, 102 / 255, 102 / 255)),
+    'blue': ((0, 255 / 255, 255 / 255), (0.9, 76 / 255, 76 / 255), (1.0, 0, 0))
+}
+cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
+
+# plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
+plt.imshow(chimera_map, cmap=cm, vmin=0, vmax=1,
+           extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
+           interpolation='nearest', origin='lower', aspect=0.5)
+plt.xlabel("$\\rho$", fontsize=40)
+ylab = plt.ylabel("$\\Delta$", fontsize=40, labelpad=20)
+ylab.set_rotation(0)
+cbar = plt.colorbar(pad=0.05)
+cbar.set_label("$R_r$", rotation=360, fontsize=40, labelpad=30)
+fig = plt.gcf()
+plt.show()
+"""
