@@ -4,8 +4,8 @@ import numpy as np
 ### Parameters
 
 # Time parameters
-numberoftimepoints = 2000  # 5000
-timelist = np.linspace(0, 20, numberoftimepoints) # attention, en diminuant alpha, ça stabilise plus lentement
+numberoftimepoints = 200  # 5000
+timelist = np.linspace(0, 10, numberoftimepoints) # attention, en diminuant alpha, ça stabilise plus lentement
 deltat = timelist[1] - timelist[0]
 
 
@@ -15,9 +15,13 @@ m = 130#128   # 500  # int(N/2)  # Donc beta = 1/2
 sizes = [m, N-m]
 n1 = sizes[0]
 n2 = sizes[1]
+f1 = n1/N
+f2 = n2/N
+f = f1/f2
 beta = (n1*(n1-1) + n2*(n2-1)) / (N*(N-1))  # Asymetry of the blocs. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
-rho_array = np.linspace(0.4, 0.9, 20)        # Average density. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
-delta_array = np.linspace(0, 0.1, 20)        # p - q. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
+betainf = f1**2 + f2**2
+rho_array = np.linspace(0, 1, 5)        # Average density. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
+delta_array = np.linspace(0, 1, 5)        # p - q. See Jean-Gab article on finite size analysis of the detectability limit of the SBM
 adjacency_mat = "average"                   # or "SBM"
 nbadjmat = 1                                # There is truly TRUE_NB_OF_SBM  = nbfreq times nbSBM
 
@@ -27,8 +31,8 @@ nbadjmat = 1                                # There is truly TRUE_NB_OF_SBM  = n
 #      [0.325, 0.675]]
 #pq = [[0.821237767786, 0.579132504628],
 #      [0.579132504628, 0.821237767786 ]]
-pq = [[0.9421581592171383 , 0.5737371065855593],
-      [0.5737371065855593, 0.9421581592171383]]
+#pq = [[0.7914572864321607, 0.5914572864321608],
+#      [0.5914572864321608, 0.7914572864321607]]
 """
 #pq = [[0.54, 0.46],
 #      [0.46, 0.54]]
@@ -39,8 +43,8 @@ pq = [[0.9421581592171383 , 0.5737371065855593],
 #pq = [[0.5925, 0.4075],
 #      [0.4075, 0.5925]]
 """
-from geometrySBM import to_probability_space
-print(to_probability_space(0.7736842105263158, 0.368421052631579, beta))
+#from geometrySBM import to_probability_space
+#print(to_probability_space(0.7, 0.2, beta))
 
 
 
@@ -59,7 +63,7 @@ nbfreq = 1
 
 # Initial conditions
 init_cond = "Uniform"
-nbCI = 20
+nbCI = 200
 #thetas0 = np.random.uniform(-np.pi, np.pi, size=(1, N))[0]
 thetas0 = np.linspace(0, 2*np.pi, N)
 

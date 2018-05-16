@@ -55,12 +55,22 @@ def give_adjacency_matrix(A_string, sizes, pq):
         A = np.array(nx.to_numpy_matrix(stochastic_block_model(sizes, pq, nodelist=None, seed=None, directed=False, selfloops=False,sparse=True)))
         return A 
     elif A_string == "average":
+        N = sum(sizes)
         p_mat_up = pq[0][0] * np.ones((sizes[0], sizes[0]))
         p_mat_low = pq[1][1] * np.ones((sizes[1], sizes[1]))
         q_mat_up = pq[0][1] * np.ones((sizes[0], sizes[1]))
         q_mat_low = pq[1][0] * np.ones((sizes[1], sizes[0]))
-        A = np.block([[p_mat_up, q_mat_up], [q_mat_low, p_mat_low]])
+        A = np.zeros((N, N))
+        A[0:sizes[0], 0:sizes[0]] = p_mat_up
+        A[sizes[0]:, sizes[0]:] = p_mat_low
+        A[0:sizes[0], sizes[0]:] = q_mat_up
+        A[sizes[0]:, 0:sizes[0]] = q_mat_low
+        #A = np.block([[p_mat_up, q_mat_up], [q_mat_low, p_mat_low]])   # For newer numpy 3.4
         return A
+#print(give_adjacency_matrix("average", [3,2], [[1,2],[3,4]]))
+
+def betafun(n1, n2):
+    return (n1*(n1-1) + n2*(n2-1)) / ( (n1 + n2)* (n1 + n2 - 1))
 
 
 def integrate_sync_dynamics_SBM(sync_dynamics, thetas0, coupling, alpha, freq_distr_str, A_string, sizes, pq, numberoffreq, numberofrandmat, timelist, rglob=False, r1r2=False, r12t=True):
@@ -339,7 +349,7 @@ def generate_chimera_map(rho_array, delta_array, beta, sizes, sync_dynamics, cou
             q = probability_space_tuple[0]
 
             print(i, j)
-            print("delta = ", delta, ",", "rho = ", ",", delta, "p = ", pq[0][0], ",", "q = ", pq[0][1])
+            print("delta = ", delta, ",", "rho = ", ",", delta, "p = ", np.round(p, 3), ",", "q = ", np.round(q, 3))
 
             if p > 1 or p < 0 or q > 1 or q < 0:
                 chimera_map[i, j] = np.nan
@@ -482,6 +492,8 @@ plot_phase_transition_r_vs_sigma(coupling, rlist, sizes, pq)
 
 
 ######################################## Generate Chimera r1 and r2 vs time ############################################
+"""
+
 def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
     plt.figure(figsize=(12, 8))
     plt.plot(timelist, rt1list, label="$r_1(t)$")
@@ -496,7 +508,7 @@ def plot_r1_r2(timelist, rt1list, rt2list, filename, timestr):
         #fig.savefig("Images/chimeras/chimerar1r2_N{}_p{}_q{}_alpha{}_sigma{}_beta{}_{}freqdistr_adjmat{}_thetas0_separateuniform_time{}to{}_{}pts.jpg".format( N, pq[0][0], pq[0][1], np.round(alpha, 2), sigma, beta, freq_distr, adjacency_mat, timelist[0], timelist[-1], len(timelist)))
         fig.savefig("data/{}_{}_r1_r2.jpg".format(filename, timestr))
 """
-
+"""
 ### Parameters
 
 
@@ -554,6 +566,7 @@ plot_r1_r2(timelist, rt1list, rt2list)
 #plt.show()
 
 """
+
 
 
 

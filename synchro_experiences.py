@@ -12,7 +12,8 @@ import json
 from theoretical_prediction import *
 import matplotlib as mat
 import seaborn as sns
-#plt.style.use('classic')
+
+
 
 ############################################ Plot r_1 and r_2  #########################################################
 """
@@ -377,7 +378,7 @@ plt.show()
 
 
 ##################################################### Chimera map ######################################################
-#"""
+"""
 density_map_bool = False
 solutions = generate_chimera_map(rho_array, delta_array, beta, sizes, kuramoto_odeint, coupling, alpha, init_cond, freq_distr, adjacency_mat,  nbCI, nbfreq, nbadjmat, timelist, density_map_bool=density_map_bool)
 chimera_map = solutions[0]
@@ -433,11 +434,12 @@ mat.rcParams.update(params)
 #    'green': ((0.0, 1.0, 1.0), (0.6, .59, .59), (1.0, 0.25, .25)),
 #    'blue': ((0.0, 1.0, 1.0), (0.6, .75, .75), (1.0, 0.7, 0.7))
 #}
-cdict = {
-    'red':   ((0, 255/255, 255/255), (0.6, 255/255,  255/255),(1.0, 255/255, 255/255)),
-    'green': ((0, 255/255, 255/255), (0.6, 147/255, 147/255), (1.0, 102/255, 102/255)),
-    'blue':  ((0, 255/255, 255/255), (0.6, 76/255, 76/255),   (1.0, 0, 0 )           )
-}
+cdict = {                                                                                           
+    'red': ((0, 255 / 255, 255 / 255), (0.9, 255 / 255, 255 / 255), (1.0, 255 / 255, 255 / 255)),   
+    'green': ((0, 255 / 255, 255 / 255), (0.9, 147 / 255, 147 / 255), (1.0, 102 / 255, 102 / 255)), 
+    'blue': ((0, 255 / 255, 255 / 255), (0.9, 76 / 255, 76 / 255), (1.0, 0, 0))                     
+}                                                                                                  
+
 cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 
 #plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
@@ -470,7 +472,7 @@ if messagebox.askyesno("Python", "Would you like to save the parameters, the dat
     if density_map_bool == True:
         with open('data/{}_{}_densitymatrix.json'.format(timestr, file), 'w') as outfile:
             json.dump(density_map.tolist(), outfile)
-#"""
+"""
 
 
 
@@ -690,12 +692,13 @@ plt.show()
 """
 
 
-########################################### Replot chimera map #########################################################
+#################################### Replot chimera map with theoretical predictions ###################################
 """
 with open('data/2018_05_11_12h27min13sec_heteroblocksizes_chimeramatrix.json') as json_data:
     chimera_map = np.array(json.load(json_data))
 
-
+rho_array = np.linspace(0.6, 0.9, 20)
+delta_array = np.linspace(0.1, 0.4, 20)
 
 plt.figure(figsize=(10, 8))
 plt.rc('axes', linewidth=2)
@@ -719,15 +722,18 @@ cdict = {
 }
 cm = mat.colors.LinearSegmentedColormap('my_colormap', cdict, 1024)
 
-# plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
+#plt.title("$\\sigma = {}$".format(sigma), fontsize=50)
 plt.imshow(chimera_map, cmap=cm, vmin=0, vmax=1,
            extent=[rho_array.min(), rho_array.max(), delta_array.min(), delta_array.max()],
            interpolation='nearest', origin='lower', aspect=0.5)
+plt.plot(np.linspace(0, 1, 200), find_delta_array(np.linspace(0, 1, 200), -0.141267, alpha, f, betainf), color="k", label='$Hopf$', linewidth=5)    #  Normally Hopf is this color : #ff4300
+plt.plot(np.linspace(0, 1, 200), find_delta_array(np.linspace(0, 1, 200), -0.1544717, alpha, f, betainf), color="r", label='$Saddle$', linewidth=5)
 plt.xlabel("$\\rho$", fontsize=40)
 ylab = plt.ylabel("$\\Delta$", fontsize=40, labelpad=20)
 ylab.set_rotation(0)
 cbar = plt.colorbar(pad=0.05)
 cbar.set_label("$R_r$", rotation=360, fontsize=40, labelpad=30)
-fig = plt.gcf()
+plt.xlim([0, 1])
+plt.ylim([0, 1])
 plt.show()
 """
