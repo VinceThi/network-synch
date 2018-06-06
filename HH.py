@@ -46,9 +46,11 @@ def taun(V):
 
 def INa(V, m, h, gNa=120.0, ENa=50.0):  # Sodium (Na) current
     """
-    :param V: Potential
-    :param m: TODO
-    :param h: TODO
+    Sodium (Na+) current; Default values taken from Ermantrout p.23
+
+    :param V: Mebrane Potential
+    :param m: Probability that an activation gate is in the open state
+    :param h: Probability that an inactivation gate is in the open state
     :param gNa: Maximum conductances [mS/cm^2]
     :param ENa: Nernst reversal potentials [mV]
     :return:
@@ -57,9 +59,9 @@ def INa(V, m, h, gNa=120.0, ENa=50.0):  # Sodium (Na) current
 
 def IK(V, n, gK=36.0, EK=-77.0):  # Potassium (K) current
     """
-    Potassium (K) current
-    :param V: Potential
-    :param n: TODO
+    Potassium (K+) current; Default values taken from Ermantrout p.23
+    :param V: Membrane Potential
+    :param n: Probability that an activation gate is in the open state
     :param gK: Maximum conductances [mS/cm^2]
     :param EK: Nernst reversal potentials [mV]
     :return: Potassium current
@@ -68,8 +70,8 @@ def IK(V, n, gK=36.0, EK=-77.0):  # Potassium (K) current
 
 def IL(V, gL=0.3, EL = -54.4):
     """
-    Leak current
-    :param V: Potential
+    Leak current; Default values taken from Ermantrout p.23
+    :param V: Membrane Potential
     :param gL: Maximum conductances [mS/cm^2]
     :param EL: Nernst reversal potentials [mV]
     :return: Leak current
@@ -102,6 +104,7 @@ def IsynHH(t, typeofcurrent):
         print("This current is not an option !")
 
 def Isyn_vec(N):
+    #TODO sizes is a global value, it should be added as a parameter
     vecIsyn = np.zeros(N)
     for i in range(0, N):
         if i < sizes[0]:
@@ -129,13 +132,12 @@ def sigm(x):
 def HHequations(w, t, N, adjacencymatrix, kvec, coupling, Isynvec, Cm=1):
     """
     We define the differential equations of the Hodgkin-Huxley model to integrate them with odeint.
-    :param w (array): Initial condition vector. For more than one neuron, muste be of the form [V0_1, V0_2 ... , m0_1, m0_2, ..., h0_1, h0_2..., n0_1, n0_2...]
-    :param t (array): Time serie
+    :param w (array of floats): Initial condition vector. For more than one neuron, must be of the form [V0_1, V0_2 ... , m0_1, m0_2, ..., h0_1, h0_2..., n0_1, n0_2...]
+    :param t (array of floats): Time serie
     :param N (int): Number of neurons (nodes)
-    :param adjacencymatrix (array): Adjacency Matrix (can be weighted)
+    :param adjacencymatrix (array): Adjacency Matrix
     :param kvec (array): Degree sequence
     :param Isynvec (array): Synaptic current vector
-
     :return: dXdt array for odeint
     """
     V, m, h, n = w[0:N], w[N:2*N], w[2*N:3*N], w[3*N:4*N]
@@ -164,21 +166,16 @@ def integrate_HH_CrankN(w, t, N, adjacencymatrix, kvec, coupling, Isynvec, nonli
     :param adjacencymatrix (array): Adjacency Matrix (can be weighted)
     :param kvec (array): Degree sequence
     :param Isynvec (array): Synaptic current vector
-
     # Old ...
     DESCRIPTION TO BE DONE ... Citer les documents jupyter... (15, 27, 28 ...)
     w: array containing initial conditions given in this order ...______________________________________________
-
     Args:
-
     V: Membrane potential
     z: Implicit integration method choice. z must be equal to 0.5 or 1.0 (Crank-Nicolson or backward Euler respectively)
     nonlinsystem_method: The way to solve the system of non linear equations. It must be 'fsolve', 'broyden1' or 'newton-krylov'
-
     Return:
     Vmatrix: Contains the solution for the potential in function of time for each compartment.
              Ex: Vmatrix[0] return the time evolution of the potential for the first compartment
-
     """
 
     # NOT DONE YET !
@@ -245,15 +242,21 @@ def integrate_HH_CrankN(w, t, N, adjacencymatrix, kvec, coupling, Isynvec, nonli
 
 
 ############################### Functions that will help to measure the electrical synchrony between neurons ###########
-def phase_from_hilbert(timeserie, t):
+def phase_from_hilbert(V_solution_matrix, N):
     """
     Computes the phase of the signal at each time by using an hilbert transform
     :param timeserie:
     :return:
     """
-    transform = sp.fftpack.hilbert(timeserie)
-    phase_vector = np.angle(transform/timeserie)
-    return phase_vector
+    i = 0
+    phase_matrix = np.empty((V_solution_matrix.T).shape, dtype=float)
+    while i < N:
+        transform = sp.fftpack.hilbert(V_solution_matrix[:,i].flatten())
+        phase_vector = np.angle(transform / V_solution_matrix[:,i].flatten())
+        phase_matrix[i, :] = phase_vector
+        i += 1
+
+    return phase_matrix
 
 def phaselockingvalue(phasevector1, phasevector2):
     """
@@ -263,6 +266,17 @@ def phaselockingvalue(phasevector1, phasevector2):
     :return:
     """
     return 1/len(phasevector1)*np.abs(sum(np.exp(1j*(phasevector1-phasevector2))))
+
+def MPS(phase_matrix):
+    """
+    Computes the Multivariate Phase Synchronization (MPS) as defined by Jalili et Al. in
+    Synchronization of EEG: Bivariate and Multivariate Measures
+    :param phase_matrix: Matrix computed with the function '' phase_from_hilbert '' defined above.
+    :return: MPS
+    """
+
+
+    return 1/(phase_matrix.shape[0]*phase_matrix.shape[1])*np.sum(np.abs(np.sum(np.exp(1j*phase_matrix), axis=0)))
 
 def hilb(timeseries):
     #timeseries = timeseries.T
@@ -367,6 +381,9 @@ def figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec):
     m = solution[:, N : 2*N]
     h = solution[:, 2*N : 3*N]
     n = solution[:, 3*N : 4*N]
+
+    phase_mat = phase_from_hilbert(V, N)
+    print('MPS : ', MPS(phase_mat))
 
     # Not finished
     ## Crank-Nicolson solutions
