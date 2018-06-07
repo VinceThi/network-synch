@@ -103,8 +103,7 @@ def IsynHH(t, typeofcurrent):
     else:
         print("This current is not an option !")
 
-def Isyn_vec(N):
-    #TODO sizes is a global value, it should be added as a parameter
+def Isyn_vec(N, sizes):
     vecIsyn = np.zeros(N)
     for i in range(0, N):
         if i < sizes[0]:
@@ -146,7 +145,10 @@ def HHequations(w, t, N, adjacencymatrix, kvec, coupling, Isynvec, Cm=1):
     #Isyn = np.array([20, 20, 20*(t>11.585)])
     #dVdt = (nodes_receiving_Iinj*IinjHH(t, typeofcurrent) - INa(V, m, h) - IK(V, n) - IL(V) + np.dot(A, V) - kvec*V) / Cm
     #dVdt = (nodes_receiving_Iinj - INa(V, m, h) - IK(V, n) - IL(V)) / Cm
-    dVdt = (Isynvec - INa(V, m, h) - IK(V, n) - IL(V) + coupling*(np.dot(adjacencymatrix, V) - kvec * V)) / Cm
+    if coupling == 0:
+        dVdt = (Isynvec - INa(V, m, h) - IK(V, n) - IL(V)) / Cm
+    else:
+        dVdt = (Isynvec - INa(V, m, h) - IK(V, n) - IL(V) + coupling*(np.dot(adjacencymatrix, V) - kvec * V)) / Cm
 
     dmdt = alpham(V) * (1.0 - m) - betam(V) * m
 
@@ -278,6 +280,56 @@ def MPS(phase_matrix):
 
     return 1/(phase_matrix.shape[0]*phase_matrix.shape[1])*np.sum(np.abs(np.sum(np.exp(1j*phase_matrix), axis=0)))
 
+def MPS_by_block(phase_matrix, sizes):
+    """
+    Computes the Multivariate Phase Synchronization (MPS) as defined by Jalili et Al. in
+    Synchronization of EEG: Bivariate and Multivariate Measures
+    :param phase_matrix: Matrix computed with the function '' phase_from_hilbert '' defined above.
+    :return: MPS
+    """
+    block_list = []
+    MPS_list = []
+    i = 0
+    while i < len(sizes):
+        if i == 0:
+            block_list.append(phase_matrix[0:sizes[i],:])
+
+        elif i < len(sizes)-1:
+            block_list.append(phase_matrix[sizes[i]:sizes[i+1],:])
+        else:
+            block_list.append(phase_matrix[sizes[i]:, :])
+        i += 1
+
+    for block in block_list:
+        MPS_list.append(1/(block.shape[0]*block.shape[1])*np.sum(np.abs(np.sum(np.exp(1j*block), axis=0))))
+
+    return MPS_list
+
+def MPS_by_block_without_time(phase_matrix, sizes):
+    """
+    Computes the Multivariate Phase Synchronization (MPS) as defined by Jalili et Al. in
+    Synchronization of EEG: Bivariate and Multivariate Measures
+    :param phase_matrix: Matrix computed with the function '' phase_from_hilbert '' defined above.
+    :return: MPS
+    """
+    block_list = []
+    MPS_list = []
+    i = 0
+    while i < len(sizes):
+        if i == 0:
+            block_list.append(phase_matrix[0:sizes[i],:])
+
+        elif i < len(sizes)-1:
+            block_list.append(phase_matrix[sizes[i]:sizes[i+1],:])
+        else:
+            block_list.append(phase_matrix[sizes[i]:, :])
+        i += 1
+
+    for block in block_list:
+        MPS_list.append(1/(block.shape[0])*np.abs(np.sum(np.exp(1j*block), axis=0)))
+
+    return MPS_list
+
 def hilb(timeseries):
     #timeseries = timeseries.T
     hilbvec = np.zeros(timeseries.shape)
@@ -373,7 +425,8 @@ def figureHH_with_gating_variables_and_currents(w0, timelist, N, adjacencymatrix
 
     return plt.show()
 
-def figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec):
+def figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec, sizes):
+    startime = timer.clock()
     # Odeint solutions
     solution = odeint(HHequations, w0, timelist, args=(N, adjacencymatrix, kvec, coupling, Isynvec,))
 
@@ -381,9 +434,16 @@ def figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec):
     m = solution[:, N : 2*N]
     h = solution[:, 2*N : 3*N]
     n = solution[:, 3*N : 4*N]
-
+    print('Done!')
     phase_mat = phase_from_hilbert(V, N)
     print('MPS : ', MPS(phase_mat))
+    print('Time : ', timer.clock() - startime)
+    mps_block = MPS_by_block(phase_mat, sizes)
+    print(mps_block)
+    r1r2 = MPS_by_block_without_time(phase_mat, sizes)
+    plt.plot(timelist, r1r2[0])
+    plt.plot(timelist, r1r2[1])
+    plt.show()
 
     # Not finished
     ## Crank-Nicolson solutions
@@ -464,6 +524,7 @@ def figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec):
 if __name__ == '__main__':
 
     # Time parameters
+
     numberoftimepoints = 10000
     timelist = np.linspace(0, 200, numberoftimepoints)
     deltat = timelist[1] - timelist[0]
@@ -485,8 +546,8 @@ if __name__ == '__main__':
     kvec = np.sum(adjacencymatrix, axis=1)
 
     # Dynamical parameters
-    coupling = 0.1
-    Isynvec = Isyn_vec(N)
+    coupling = 0.2
+    Isynvec = Isyn_vec(N, sizes)
 
     # Initial conditions
     V0 = -65
@@ -505,7 +566,7 @@ if __name__ == '__main__':
         else:
             w0[i] = n0
 
-    figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec)
+    figureHH(w0, timelist, N, adjacencymatrix, kvec, coupling, Isynvec, sizes)
 
     #V0 = -65.0
     #V1 = -65.0
