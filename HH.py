@@ -149,7 +149,7 @@ def HHequations(w, t, N, adjacencymatrix, kvec, gsyn, Isynvec, Cm=1):
     #Isyn = np.array([20, 20, 20*(t>11.585)])
     #dVdt = (nodes_receiving_Iinj*IinjHH(t, typeofcurrent) - INa(V, m, h) - IK(V, n) - IL(V) + np.dot(A, V) - kvec*V) / Cm
     #dVdt = (nodes_receiving_Iinj - INa(V, m, h) - IK(V, n) - IL(V)) / Cm
-    dVdt = (Isynvec - INa(V, m, h) - IK(V, n) - IL(V) + gsyn*(np.dot(adjacencymatrix, V) - kvec * V)) / Cm
+    dVdt = (Isynvec - INa(V, m, h) - IK(V, n) - IL(V) + gsyn/N*(np.dot(adjacencymatrix, V) - kvec * V)) / Cm
 
     dmdt = alpham(V) * (1.0 - m) - betam(V) * m
 
@@ -550,15 +550,15 @@ def synchro_transition_HH(w0, timelist, N, sizes, adjacencymatrix, kvec, gsyn_ar
                   "number of nodes : N = {}\n".format(N),
                   "pq = {}\n".format(pq),
                   "sizes = {}\n".format(sizes),
-                  "adjacency_matrix_type = {}\n".format(adjacencymatrix),
-                  "degree sequence kvec = {}\n".format(kvec),
-                  "gsyn_array = {}\n".format(gsyn_array), "\n",
+                  "adjacency_matrix = {}\n".format(adjacencymatrix),
+                  "sum over the column of adj mat kvec = {}\n".format(kvec),
+                  "gsyn_array = np.linspace({}, {}, {})\n".format(gsyn_array[0], gsyn_array[-1], len(gsyn_array)), "\n",
                   "Total simulation time = {} minutes".format(MPS_transitions[2])]
     timestr = time.strftime("%Y_%m_%d_%Hh%Mmin%Ssec")
 
     plt.plot(gsyn_array, MPS_transitions[0], color="k", linewidth=3, label="MPS")  # #00ffbb
-    plt.plot(gsyn_array, MPS_transitions[1][:,0], color="#ff2600", linewidth=3, label='MPS$_1$')
-    plt.plot(gsyn_array, MPS_transitions[1][:,1], color="#ff6600", linewidth=3, label='MPS$_2$')
+    plt.plot(gsyn_array, MPS_transitions[1][:,0], color="#ff2600", linewidth=3, label='MPS${}_{1}$')
+    plt.plot(gsyn_array, MPS_transitions[1][:,1], color="#ff6600", linewidth=3, label='MPS${}_{2}$')
 
     ylab = plt.ylabel('$MPS$', fontsize=35, labelpad=50)
     ylab.set_rotation(0)
@@ -566,6 +566,8 @@ def synchro_transition_HH(w0, timelist, N, sizes, adjacencymatrix, kvec, gsyn_ar
     plt.tick_params(axis='both', which='major', labelsize=20)
     plt.xlim([gsyn_array[0], gsyn_array[-1]])
     #plt.ylim([0, 1.02])
+    legend = plt.legend(loc='best', fontsize=30)
+    legend.get_frame().set_linewidth(2)
     fig = plt.gcf()
     plt.tight_layout()
     plt.show()
@@ -586,6 +588,9 @@ def synchro_transition_HH(w0, timelist, N, sizes, adjacencymatrix, kvec, gsyn_ar
 
         with open('synchro_data/HH_data/{}_{}_MPS_transitions_blocks.json'.format(timestr, file), 'w') as outfile:
             json.dump(MPS_transitions[1].tolist(), outfile)
+
+
+
 
 ############################## Experiences #############################################################################
 if __name__ == '__main__':
@@ -657,13 +662,16 @@ if __name__ == '__main__':
     pq = [[0.8, 0.3],
           [0.3, 0.8]]
 
-    adjacencymatrix = give_adjacency_matrix("average", sizes, pq)
-    kvec = np.sum(adjacencymatrix, axis=1)
+    adjacency_mat = "average"  # or "SBM"
+    adjacencymatrix = give_adjacency_matrix(adjacency_mat, sizes, pq)
+    kvec = np.sum(adjacencymatrix, axis=1)  # if we simulate on the mean adjacency matrix, this is NOT the sequence of degree !
 
     # Dynamical parameters
     #gsyn = 0.1
-    gsyn_array = np.linspace(0, 0.1, 500)
-    Isynvec = np.linspace(10, 50, N) #Isyn_vec(N)
+    gsyn_array = np.linspace(0, 4, 100)
+    Isynvec = np.linspace(10, 50, N)# np.zeros(N)# #Isyn_vec(N)
+    #Isynvec[0:sizes[0]] = 10
+    #Isynvec[sizes[0]:sizes[1]] = 50
 
     # Initial conditions
     V0 = -65
